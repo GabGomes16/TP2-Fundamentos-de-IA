@@ -1,6 +1,4 @@
 import random
-import matplotlib.pyplot as plt
-import numpy as np
 
 def carregar_dados_mochila(caminho_arquivo):
     # O bloco 'with' garante que o arquivo será fechado automaticamente após a leitura
@@ -104,10 +102,11 @@ def mutacao(taxa_mutacao, filho):
     return filho    
 
 def algoritimo_genetico(num_geracoes, tamanho_populacao, quantidade_itens, capacidade, itens, fator_penalidade):
-    
     populacao = gera_populacao(tamanho_populacao, quantidade_itens)
+    lucro_maximo = sum(item['valor'] for item in itens)
     taxa_mutacao = 1 / quantidade_itens
     melhor_global = {'cromossomo': None, 'fitness': -1, "peso": -1}
+    pior_global = {'cromossomo': None, 'fitness': lucro_maximo, "peso": capacidade}
     historico_fitness = []
     
     for geracao in range(num_geracoes):
@@ -117,12 +116,22 @@ def algoritimo_genetico(num_geracoes, tamanho_populacao, quantidade_itens, capac
         # 2. Registro e Elitismo
         melhor_fitness = max(valores_fitness)
         indice_melhor = valores_fitness.index(melhor_fitness)
+
+        pior_fitness = min(valores_fitness)
+        indice_pior = valores_fitness.index(pior_fitness)
+
         historico_fitness.append(melhor_fitness)
 
         if melhor_fitness > melhor_global['fitness']:
             melhor_global['fitness'] = melhor_fitness
             melhor_global['cromossomo'] = populacao[indice_melhor].copy()
             melhor_global['peso'] = calcula_peso(populacao[indice_melhor], itens)
+            
+        if pior_fitness < pior_global['fitness']:
+            # CORREÇÃO APLICADA AQUI
+            pior_global['fitness'] = pior_fitness 
+            pior_global['cromossomo'] = populacao[indice_pior].copy()
+            pior_global['peso'] = calcula_peso(populacao[indice_pior], itens)
             
         # 3. Seleção
         pais_selecionados = selecao(populacao, valores_fitness)
@@ -141,24 +150,17 @@ def algoritimo_genetico(num_geracoes, tamanho_populacao, quantidade_itens, capac
         # 5. Avaliação dos Filhos e Substituição do Pior (Garantia do Elitismo)
         fitness_filhos = [adequacao(c, itens, capacidade, fator_penalidade) for c in nova_populacao]
 
-        pior_fitness = min(fitness_filhos)
-        indice_do_pior = fitness_filhos.index(pior_fitness)
+        pior_fitness_filhos = min(fitness_filhos)
+        indice_do_pior_filho = fitness_filhos.index(pior_fitness_filhos)
         
-        nova_populacao[indice_do_pior] = melhor_global['cromossomo'].copy()
+        nova_populacao[indice_do_pior_filho] = melhor_global['cromossomo'].copy()
         
         # 6. Atualização de Geração
         populacao = nova_populacao
 
-        # 7. Critério de Parada (Estagnação de 50 gerações) - CORRIGIDO
+        # 7. Critério de Parada
         if len(historico_fitness) > 50 and historico_fitness[-1] == historico_fitness[-51]:
+            # print("Encontrou otimo local")
             break
     
-    return melhor_global, historico_fitness
-
-
-# print(historico)
-
-# print(fator_penalidade)
-# print(f"Dados do último item: {meus_dados['itens'][-1]}")
-# teste = gera_populacao(4,2)
-# print(teste)
+    return melhor_global, pior_global, historico_fitness
