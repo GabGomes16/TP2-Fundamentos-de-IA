@@ -47,7 +47,7 @@ def selecao(populacao_original, populacao_teste):
     populacao_nova = np.zeros((tamanho_populacao, num_variaveis))
     for i in range(tamanho_populacao):
         fit_pop_original = funcao_objetivo(populacao_original[i])
-        fit_pop_teste = funcao_objetivo(populacao_mutante[i])
+        fit_pop_teste = funcao_objetivo(populacao_teste[i])
 
         if fit_pop_teste <= fit_pop_original:
             populacao_nova[i] = populacao_teste[i]
