@@ -1,5 +1,8 @@
 import numpy as np
 
+def funcao_objetivo(individuo):
+    return np.sum((np.square(individuo)))
+
 def popular(tamanho_populacao, numero_variaveis, valor_min, valor_max):
     populacao = np.random.uniform(valor_min, valor_max, (tamanho_populacao, numero_variaveis))
     return populacao
@@ -38,14 +41,28 @@ def cruzamento(populacao_original, populacao_mutante, cr):
 
     return populacao_teste
 
-def selecao():
-    pass
+def selecao(populacao_original, populacao_teste):
+    tamanho_populacao, num_variaveis = populacao_original.shape
+
+    populacao_nova = np.zeros((tamanho_populacao, num_variaveis))
+    for i in range(tamanho_populacao):
+        fit_pop_original = funcao_objetivo(populacao_original[i])
+        fit_pop_teste = funcao_objetivo(populacao_mutante[i])
+
+        if fit_pop_teste <= fit_pop_original:
+            populacao_nova[i] = populacao_teste[i]
+        else: 
+            populacao_nova[i] = populacao_original[i]
+
+    return populacao_nova
 
 
-
-populacao = popular(10, 10, -5, 5)
-#print(populacao)
-populacao_mutante = mutacao_diferencial(populacao)
+populacao = popular(3, 10, -5, 5)
+print("População:\n", populacao)
+populacao_mutante = mutacao_diferencial(populacao, 0.2)
 #print(populacao_mutante)
-gen2 = cruzamento(populacao, populacao_mutante, 0.8)
-print(gen2)
+pop_teste = cruzamento(populacao, populacao_mutante, 0.8)
+print("População de teste:\n", pop_teste)
+
+nex_gen = selecao(populacao, pop_teste)
+print("Nova população:\n", nex_gen)
