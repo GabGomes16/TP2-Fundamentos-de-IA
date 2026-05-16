@@ -36,6 +36,13 @@ def funcao_objetivo(cromossomo, itens):
 
     return lucro
 
+def calcula_peso(cromossomo, itens):
+    peso = 0
+    for gene, item in zip(cromossomo, itens):
+        peso +=  item['peso'] * gene
+
+    return peso
+
 def adequacao(cromossomo, itens, capacidade, fator_penalidade):
     lucro_total = sum(item['valor'] * gene for gene, item in zip(cromossomo, itens))
     peso_total = sum(item['peso'] * gene for gene, item in zip(cromossomo, itens))
@@ -64,18 +71,92 @@ def selecao(populacao, valores_fitness, tamanho_torneio=3):
         
     return pais_selecionados
 
-quantidade_itens, capacidade, itens = carregar_dados_mochila("mochila.txt")
+def crossover(pai_a, pai_b):
+    taxa_cruzamento = 0.8
 
-maior_razao = max(item['valor'] / item['peso'] for item in itens)
-fator_penalidade = maior_razao + 1
+    if random.random() > taxa_cruzamento:
+        return pai_a, pai_b
+        
+    else:
+        filho_a = []
+        filho_b = []
+        
+        for index in range(len(pai_a)):
+            
+            chance_media = random.choice([0, 1])
+            
+            if chance_media == 0:
+                filho_a.append(pai_a[index])
+                filho_b.append(pai_b[index])
+            else:
+                filho_a.append(pai_b[index])
+                filho_b.append(pai_a[index])
 
-populacao = gera_populacao(100, quantidade_itens)
-valores_fitness = []
-for cromossomo in populacao:
-    valores_fitness.append(adequacao(cromossomo, itens, capacidade, fator_penalidade))
+        return filho_a, filho_b
+
+def mutacao(taxa_mutacao, filho):
+    
+    for gene in range(len(filho)):
+        if random.random() < taxa_mutacao:
+            
+            filho[gene] = int(not filho[gene])
+            
+    return filho    
+
+def algoritimo_genetico(num_geracoes, tamanho_populacao, quantidade_itens, capacidade, itens, fator_penalidade):
+    
+    populacao = gera_populacao(tamanho_populacao, quantidade_itens)
+    taxa_mutacao = 1 / quantidade_itens
+    melhor_global = {'cromossomo': None, 'fitness': -1, "peso": -1}
+    historico_fitness = []
+    
+    for geracao in range(num_geracoes):
+        # 1. Avaliação
+        valores_fitness = [adequacao(cromossomo, itens, capacidade, fator_penalidade) for cromossomo in populacao]
+
+        # 2. Registro e Elitismo
+        melhor_fitness = max(valores_fitness)
+        indice_melhor = valores_fitness.index(melhor_fitness)
+        historico_fitness.append(melhor_fitness)
+
+        if melhor_fitness > melhor_global['fitness']:
+            melhor_global['fitness'] = melhor_fitness
+            melhor_global['cromossomo'] = populacao[indice_melhor].copy()
+            melhor_global['peso'] = calcula_peso(populacao[indice_melhor], itens)
+            
+        # 3. Seleção
+        pais_selecionados = selecao(populacao, valores_fitness)
+        nova_populacao = []
+
+        # 4. Reprodução (Crossover e Mutação em pares)
+        for i in range(0, len(pais_selecionados), 2):
+            pai_a = pais_selecionados[i]
+            pai_b = pais_selecionados[i + 1]
+
+            filho_a, filho_b = crossover(pai_a, pai_b)
+
+            nova_populacao.append(mutacao(taxa_mutacao, filho_a))
+            nova_populacao.append(mutacao(taxa_mutacao, filho_b))
+
+        # 5. Avaliação dos Filhos e Substituição do Pior (Garantia do Elitismo)
+        fitness_filhos = [adequacao(c, itens, capacidade, fator_penalidade) for c in nova_populacao]
+
+        pior_fitness = min(fitness_filhos)
+        indice_do_pior = fitness_filhos.index(pior_fitness)
+        
+        nova_populacao[indice_do_pior] = melhor_global['cromossomo'].copy()
+        
+        # 6. Atualização de Geração
+        populacao = nova_populacao
+
+        # 7. Critério de Parada (Estagnação de 50 gerações) - CORRIGIDO
+        if len(historico_fitness) > 50 and historico_fitness[-1] == historico_fitness[-51]:
+            break
+    
+    return melhor_global, historico_fitness
 
 
-print(selecao(populacao, valores_fitness))
+# print(historico)
 
 # print(fator_penalidade)
 # print(f"Dados do último item: {meus_dados['itens'][-1]}")
