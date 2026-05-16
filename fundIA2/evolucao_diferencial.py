@@ -55,14 +55,3 @@ def selecao(populacao_original, populacao_teste):
             populacao_nova[i] = populacao_original[i]
 
     return populacao_nova
-
-
-populacao = popular(3, 10, -5, 5)
-print("População:\n", populacao)
-populacao_mutante = mutacao_diferencial(populacao, 0.2)
-#print(populacao_mutante)
-pop_teste = cruzamento(populacao, populacao_mutante, 0.8)
-print("População de teste:\n", pop_teste)
-
-nex_gen = selecao(populacao, pop_teste)
-print("Nova população:\n", nex_gen)
